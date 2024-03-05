@@ -12,6 +12,9 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 import static com.alibou.security.user.Permission.ADMIN_CREATE;
 import static com.alibou.security.user.Permission.ADMIN_DELETE;
@@ -54,6 +57,7 @@ public class SecurityConfiguration {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .addFilterBefore(corsFilter(), UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(req ->
                         req.requestMatchers(WHITE_LIST_URL)
                                 .permitAll()
@@ -76,5 +80,24 @@ public class SecurityConfiguration {
         ;
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfiguration corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        // Replace "*" with specific allowed origins for production
+        configuration.setAllowedOrigins(List.of("*"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        return configuration;
+    }
+
+      @Bean
+    public CorsFilter corsFilter() {
+        log.debug("Registering CORS filter");
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = corsConfigurationSource();
+        source.registerCorsConfiguration("/**", config); // Apply CORS configuration to all paths
+        return new CorsFilter(source);
     }
 }
